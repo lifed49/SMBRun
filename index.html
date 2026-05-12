@@ -160,7 +160,6 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    touch-action: none;
   }
 
   #game-wrapper {
@@ -239,7 +238,7 @@
 <body>
 
 <div id="rotate-overlay"><div class="rotate-icon">📱</div><div>Please rotate your device to landscape mode</div></div>
-<button id="jump-btn" ontouchstart="handleJumpBtn(event)">JUMP</button>
+<button id="jump-btn" id="jump-btn">JUMP</button>
 <div id="scale-wrapper">
 <div id="title">🍄 SMBRun 🍄</div>
 <div id="subtitle">Super Mario Run</div>
@@ -265,7 +264,7 @@
     <h2 id="overlay-title">Super Mario Run</h2>
     <p id="overlay-msg">Press SPACE or TAP to begin your quest</p>
     <p id="overlay-score" class="final-score" style="display:none"></p>
-    <button id="start-btn" onclick="startGame()">Begin Quest</button>
+    <button id="start-btn" onclick="startGame()" ontouchstart="startGame()">Begin Quest</button>
   </div>
 </div>
 
@@ -349,6 +348,11 @@ document.getElementById('start-btn').addEventListener('keydown', e => { if(e.cod
 
 // ── MOBILE: JUMP BUTTON ───────────────────────────────────
 function handleJumpBtn(e) { e.preventDefault(); doJump(); }
+document.getElementById('jump-btn').addEventListener('pointerdown', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  doJump();
+});
 
 // ── MOBILE: RESPONSIVE SCALING ───────────────────────────
 const CANVAS_W = 800;
@@ -377,8 +381,9 @@ window.addEventListener('resize', checkOrientation);
 window.addEventListener('orientationchange', () => setTimeout(checkOrientation, 200));
 checkOrientation();
 
-// ── PREVENT DOUBLE-TAP ZOOM ──────────────────────────────
-document.addEventListener('touchend', e => { e.preventDefault(); }, { passive: false });
+// ── PREVENT DOUBLE-TAP ZOOM (canvas only, not buttons) ───
+canvas.addEventListener('touchend', e => { e.preventDefault(); }, { passive: false });
+canvas.style.touchAction = 'none';
 
 // ── PARTICLES ─────────────────────────────────────────────
 function spawnJumpDust() {
@@ -430,15 +435,16 @@ function drawBg() {
   ctx.restore();
 
   // Clouds — Super Mario pixel-art style
+  let _pbCx = 0, _pbCy = 0, _pbS = 1;
+  function pb(x, y, w, h, col) {
+    ctx.fillStyle = col;
+    ctx.fillRect(Math.round(_pbCx + x*_pbS), Math.round(_pbCy + y*_pbS), Math.round(w*_pbS), Math.round(h*_pbS));
+  }
   clouds.forEach(cl => {
-    const s = cl.w / 64;
-    const cx = cl.x - cl.w * 0.5;
-    const cy = cl.y;
+    _pbS = cl.w / 64;
+    _pbCx = cl.x - cl.w * 0.5;
+    _pbCy = cl.y;
     ctx.save();
-    function pb(x, y, w, h, col) {
-      ctx.fillStyle = col;
-      ctx.fillRect(Math.round(cx + x*s), Math.round(cy + y*s), Math.round(w*s), Math.round(h*s));
-    }
     // Black outline
     pb(8,14,48,4,'#000'); pb(4,10,4,8,'#000'); pb(56,10,4,8,'#000');
     pb(4,6,8,4,'#000'); pb(52,6,8,4,'#000');
